@@ -5,7 +5,21 @@ const money = (value, compact = false) => {
 const ago = (date) => { const minutes = Math.max(1, Math.round((Date.now() - new Date(date)) / 60000)); return minutes < 60 ? `${minutes}m ago` : `${Math.round(minutes / 60)}h ago`; };
 const esc = (value) => String(value || '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const marketPageSize = 25;
-const marketState = { all: [], filtered: [], page: 1 };
+const categoryRules = {
+  'layer-1': ['layer-1', 'smart-contract-platform', 'platform'],
+  defi: ['defi', 'decentralized-finance'],
+  stablecoins: ['stablecoin', 'stablecoins'],
+  meme: ['memes', 'meme-token', 'meme'],
+  rwa: ['real-world-assets', 'rwa', 'real-world'],
+  ai: ['artificial-intelligence', 'ai', 'big-data', 'machine-learning']
+};
+const marketState = { all: [], filtered: [], page: 1, category: 'all' };
+
+function matchesCategory(coin, category) {
+  if (category === 'all') return true;
+  const haystack = `${coin.name} ${coin.symbol} ${(coin.tags || []).join(' ')}`.toLowerCase();
+  return categoryRules[category].some((term) => haystack.includes(term));
+}
 
 function renderMarkets() {
   const start = (marketState.page - 1) * marketPageSize;
@@ -26,9 +40,15 @@ function renderMarkets() {
 
 function filterMarkets() {
   const query = document.querySelector('#market-search').value.trim().toLowerCase();
-  marketState.filtered = marketState.all.filter((coin) => `${coin.name} ${coin.symbol}`.toLowerCase().includes(query));
+  marketState.filtered = marketState.all.filter((coin) => matchesCategory(coin, marketState.category) && `${coin.name} ${coin.symbol}`.toLowerCase().includes(query));
   marketState.page = 1;
   renderMarkets();
+}
+
+function selectCategory(category) {
+  marketState.category = category;
+  document.querySelectorAll('[data-category]').forEach((link) => link.classList.toggle('selected', link.dataset.category === category));
+  filterMarkets();
 }
 
 async function loadMarkets() {
@@ -65,6 +85,11 @@ document.querySelector('#refresh').addEventListener('click', refresh);
 document.querySelector('#market-search').addEventListener('input', filterMarkets);
 document.querySelector('#previous-page').addEventListener('click', () => { if (marketState.page > 1) { marketState.page -= 1; renderMarkets(); } });
 document.querySelector('#next-page').addEventListener('click', () => { if (marketState.page < Math.ceil(marketState.filtered.length / marketPageSize)) { marketState.page += 1; renderMarkets(); } });
+document.querySelectorAll('[data-category]').forEach((link) => link.addEventListener('click', (event) => {
+  event.preventDefault();
+  selectCategory(link.dataset.category);
+  document.querySelector('#markets').scrollIntoView({ behavior: 'smooth' });
+}));
 const menuToggle = document.querySelector('#menu-toggle');
 const siteMenu = document.querySelector('#site-menu');
 menuToggle.addEventListener('click', () => {
