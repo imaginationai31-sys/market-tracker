@@ -41,20 +41,6 @@ app.get('/api/markets', async (req, res) => {
   }
 });
 
-app.get('/api/categories', async (_req, res) => {
-  try {
-    const data = await cached('categories', async () => {
-      if (!process.env.COINMARKETCAP_API_KEY) throw new Error('COINMARKETCAP_API_KEY is not configured');
-      const response = await fetch('https://pro-api.coinmarketcap.com/v1/cryptocurrency/categories?start=1&limit=500&sort=market_cap&sort_dir=desc&convert=USD', { headers: coinMarketCapHeaders() });
-      if (!response.ok) throw new Error(`CoinMarketCap returned ${response.status}`);
-      return await response.json();
-    }, 300000);
-    res.json(data);
-  } catch (error) {
-    res.status(502).json({ error: 'CoinMarketCap categories are temporarily unavailable.', detail: error.message });
-  }
-});
-
 app.get('/api/global', async (_req, res) => {
   try {
     const data = await cached('global', async () => {

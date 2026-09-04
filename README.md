@@ -16,7 +16,6 @@ Open `http://localhost:3000`. The dashboard requires `COINMARKETCAP_API_KEY` and
 ## API routes
 
 - `GET /api/markets?limit=1000` proxies up to 1,000 CoinMarketCap listings with a one-minute cache.
-- `GET /api/categories` loads the CoinMarketCap category catalog for category browsing.
 - `GET /api/global` retrieves total CoinMarketCap market capitalization and 24-hour volume.
 - `GET /api/news` parses CoinDesk RSS with a two-minute cache.
 - `GET /api/health` provides a simple server health check.

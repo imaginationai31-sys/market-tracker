@@ -57,17 +57,6 @@ async function loadMarkets(category = marketState.category) {
   document.querySelector('#updated').textContent = `updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
-async function loadCategories() {
-  const response = await fetch('/api/categories');
-  if (!response.ok) throw new Error('Categories unavailable');
-  const payload = await response.json();
-  const categories = payload.data || [];
-  const list = document.querySelector('#category-list');
-  list.innerHTML = `<a href="#markets" data-category=""><strong>All markets</strong><span>Browse the complete live list</span></a>${categories.map((category) => `<a href="#markets" data-category="${esc(category.name)}"><strong>${esc(category.title || category.name)}</strong><span>${Number(category.num_tokens || 0).toLocaleString()} assets · ${esc(category.description || 'CoinMarketCap category')}</span></a>`).join('')}`;
-  bindCategoryLinks();
-  selectCategory('');
-}
-
 function bindCategoryLinks() {
   document.querySelectorAll('[data-category]').forEach((link) => link.addEventListener('click', (event) => {
     event.preventDefault();
@@ -125,7 +114,8 @@ document.addEventListener('click', (event) => {
     siteMenu.hidden = true;
   }
 });
-Promise.all([loadCategories(), loadNews(), loadGlobalMetrics()]).catch((error) => {
+bindCategoryLinks();
+Promise.all([loadMarkets(), loadNews(), loadGlobalMetrics()]).catch((error) => {
   console.error(error);
   document.querySelector('#updated').textContent = 'connection issue';
 });
