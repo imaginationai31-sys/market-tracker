@@ -20,7 +20,7 @@ async function loadMarkets() {
   document.querySelector('#market-change').className = `change ${weightedChange >= 0 ? 'positive' : 'negative'}`;
   document.querySelector('#pulse').textContent = weightedChange >= 0 ? 'Risk on' : 'Risk off';
   document.querySelector('#market-table').innerHTML = markets.map((coin, index) => { const quote = coin.quote.USD; const change = quote.percent_change_24h; return `<tr><td>${String(index + 1).padStart(2, '0')}</td><td><div class="coin"><span class="coin-symbol">${esc(coin.symbol.slice(0, 3))}</span><span>${esc(coin.name)}<small>${esc(coin.symbol)}</small></span></div></td><td>${money(quote.price)}</td><td class="${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${change.toFixed(2)}%</td><td>${money(quote.market_cap, true)}</td><td>${money(quote.volume_24h, true)}</td><td><div class="mini-chart" aria-hidden="true"></div></td></tr>`; }).join('');
-  document.querySelector('#updated').textContent = payload.demo ? 'demo snapshot' : `updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  document.querySelector('#updated').textContent = `updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 async function loadNews() {
