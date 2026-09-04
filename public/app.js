@@ -65,4 +65,21 @@ document.querySelector('#refresh').addEventListener('click', refresh);
 document.querySelector('#market-search').addEventListener('input', filterMarkets);
 document.querySelector('#previous-page').addEventListener('click', () => { if (marketState.page > 1) { marketState.page -= 1; renderMarkets(); } });
 document.querySelector('#next-page').addEventListener('click', () => { if (marketState.page < Math.ceil(marketState.filtered.length / marketPageSize)) { marketState.page += 1; renderMarkets(); } });
+const menuToggle = document.querySelector('#menu-toggle');
+const siteMenu = document.querySelector('#site-menu');
+menuToggle.addEventListener('click', () => {
+  const isOpen = menuToggle.getAttribute('aria-expanded') === 'true';
+  menuToggle.setAttribute('aria-expanded', String(!isOpen));
+  siteMenu.hidden = isOpen;
+});
+siteMenu.addEventListener('click', () => {
+  menuToggle.setAttribute('aria-expanded', 'false');
+  siteMenu.hidden = true;
+});
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.menu-wrap')) {
+    menuToggle.setAttribute('aria-expanded', 'false');
+    siteMenu.hidden = true;
+  }
+});
 refresh();
