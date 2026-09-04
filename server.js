@@ -21,7 +21,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/markets', async (req, res) => {
   try {
-    const limit = Math.min(Number(req.query.limit) || 10, 50);
+    const limit = Math.min(Number(req.query.limit) || 1000, 1000);
     const data = await cached(`markets-${limit}`, async () => {
       if (!process.env.COINMARKETCAP_API_KEY) throw new Error('COINMARKETCAP_API_KEY is not configured');
       const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=${limit}&convert=USD`, {
