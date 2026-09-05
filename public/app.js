@@ -8,6 +8,14 @@ const marketPageSize = 25;
 const watchlistStorageKey = 'pulseboard-watchlist';
 const watchlist = new Set(JSON.parse(localStorage.getItem(watchlistStorageKey) || '[]'));
 const marketState = { all: [], filtered: [], page: 1, category: '', categoryName: 'All markets', watchlistOnly: false, requestId: 0 };
+const themeToggle = document.querySelector('#theme-toggle');
+
+function applyTheme(theme) {
+  document.body.classList.toggle('light-theme', theme === 'light');
+  themeToggle.textContent = theme === 'light' ? '☾' : '☼';
+  themeToggle.setAttribute('aria-label', `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`);
+  themeToggle.title = `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`;
+}
 
 function saveWatchlist() {
   localStorage.setItem(watchlistStorageKey, JSON.stringify([...watchlist]));
@@ -132,6 +140,12 @@ async function refresh() {
   const button = document.querySelector('#refresh'); button.textContent = '…'; button.disabled = true;
   try { await Promise.all([loadMarkets(), loadGlobalMetrics(), loadNews()]); } catch (error) { console.error(error); document.querySelector('#updated').textContent = 'connection issue'; } finally { button.textContent = '↻'; button.disabled = false; }
 }
+themeToggle.addEventListener('click', () => {
+  const theme = document.body.classList.contains('light-theme') ? 'dark' : 'light';
+  localStorage.setItem('pulseboard-theme', theme);
+  applyTheme(theme);
+});
+applyTheme(localStorage.getItem('pulseboard-theme') || 'dark');
 document.querySelector('#refresh').addEventListener('click', refresh);
 document.querySelector('#market-search').addEventListener('input', filterMarkets);
 document.querySelector('#previous-page').addEventListener('click', () => { if (marketState.page > 1) { marketState.page -= 1; renderMarkets(); } });
