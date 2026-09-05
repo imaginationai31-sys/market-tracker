@@ -23,10 +23,20 @@ function coinMarketCapHeaders() {
   return { 'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY, Accept: 'application/json' };
 }
 
+const categoryAliases = {
+  'decentralized-finance': 'defi',
+  'layer-1': 'layer-1',
+  stablecoin: 'stablecoin',
+  memes: 'memes',
+  'real-world-assets': 'real-world-assets',
+  'artificial-intelligence': 'artificial-intelligence'
+};
+
 app.get('/api/markets', async (req, res) => {
   try {
     const limit = Math.min(Math.max(Number(req.query.limit) || 100000, 1), 100000);
-    const category = typeof req.query.category === 'string' ? req.query.category.trim() : '';
+    const requestedCategory = typeof req.query.category === 'string' ? req.query.category.trim() : '';
+    const category = categoryAliases[requestedCategory] || requestedCategory;
     const data = await cached(`markets-${limit}-${category}`, async () => {
       if (!process.env.COINMARKETCAP_API_KEY) throw new Error('COINMARKETCAP_API_KEY is not configured');
       const pageSize = 5000;

@@ -7,7 +7,7 @@ const esc = (value) => String(value || '').replace(/[&<>'"]/g, (char) => ({ '&':
 const marketPageSize = 25;
 const watchlistStorageKey = 'pulseboard-watchlist';
 const watchlist = new Set(JSON.parse(localStorage.getItem(watchlistStorageKey) || '[]'));
-const marketState = { all: [], filtered: [], page: 1, category: '', categoryName: 'All markets', watchlistOnly: false };
+const marketState = { all: [], filtered: [], page: 1, category: '', categoryName: 'All markets', watchlistOnly: false, requestId: 0 };
 
 function saveWatchlist() {
   localStorage.setItem(watchlistStorageKey, JSON.stringify([...watchlist]));
@@ -33,7 +33,7 @@ function renderMarkets() {
   table.innerHTML = pageMarkets.length ? pageMarkets.map((coin, index) => {
     const quote = coin.quote.USD;
     const change = quote.percent_change_24h;
-    const rank = start + index + 1;
+    const rank = Number(coin.cmc_rank) || start + index + 1;
     const key = coinKey(coin);
     const saved = watchlist.has(key);
     const logo = coinLogoUrl(coin);
@@ -65,15 +65,19 @@ function bindWatchlistButtons() {
 
 function selectCategory(category) {
   marketState.category = category;
-  loadMarkets();
+  marketState.watchlistOnly = false;
+  document.querySelector('#market-heading').textContent = marketState.categoryName;
+  loadMarkets(category);
 }
 
 async function loadMarkets(category = marketState.category) {
+  const requestId = ++marketState.requestId;
   const query = new URLSearchParams({ limit: '100000' });
   if (category) query.set('category', category);
   const response = await fetch(`/api/markets?${query}`);
   if (!response.ok) throw new Error('Market data unavailable');
   const payload = await response.json();
+  if (requestId !== marketState.requestId) return;
   const markets = payload.data || [];
   const quotes = markets.map((coin) => coin.quote.USD);
   const cap = quotes.reduce((sum, quote) => sum + quote.market_cap, 0);
