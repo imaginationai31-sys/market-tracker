@@ -33,6 +33,21 @@ function coinLogoUrl(coin) {
   return coin.id ? `https://s2.coinmarketcap.com/static/img/coins/64x64/${encodeURIComponent(coin.id)}.png` : '';
 }
 
+function renderTrendingCoin(markets) {
+  const trending = markets.filter((coin) => typeof coin.quote?.USD?.percent_change_24h === 'number').sort((left, right) => Math.abs(right.quote.USD.percent_change_24h) - Math.abs(left.quote.USD.percent_change_24h))[0];
+  const name = document.querySelector('#trending-coin');
+  const change = document.querySelector('#trending-change');
+  if (!trending) {
+    name.textContent = 'Awaiting data';
+    change.textContent = '—';
+    return;
+  }
+  const percent = trending.quote.USD.percent_change_24h;
+  name.textContent = `${trending.name} (${trending.symbol})`;
+  change.textContent = `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%`;
+  change.className = `globe-change ${percent >= 0 ? 'positive' : 'negative'}`;
+}
+
 function renderMarkets() {
   const start = (marketState.page - 1) * marketPageSize;
   const pageMarkets = marketState.filtered.slice(start, start + marketPageSize);
@@ -99,6 +114,7 @@ async function loadMarkets(category = marketState.category) {
   document.querySelector('#market-change').className = `change ${weightedChange >= 0 ? 'positive' : 'negative'}`;
   document.querySelector('#pulse').textContent = weightedChange >= 0 ? 'Risk on' : 'Risk off';
   marketState.all = markets;
+  renderTrendingCoin(markets);
   filterMarkets();
   document.querySelector('#updated').textContent = `updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
