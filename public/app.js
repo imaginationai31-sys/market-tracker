@@ -11,6 +11,7 @@ const marketState = { all: [], filtered: [], page: 1, category: '', categoryName
 let moverSlides = [];
 let moverSlideIndex = 0;
 let moverSlideTimer;
+let chartMetric = 'market_cap';
 const themeToggle = document.querySelector('#theme-toggle');
 
 function applyTheme(theme) {
@@ -70,6 +71,26 @@ function showMoverSlide() {
   change.textContent = `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%`;
   change.className = `globe-change ${percent >= 0 ? 'positive' : 'negative'}`;
   document.querySelectorAll('.mover-dot').forEach((dot, index) => dot.classList.toggle('active', index === moverSlideIndex));
+}
+
+function renderMarketChart(markets) {
+  const chart = document.querySelector('#market-chart');
+  const points = markets.filter((coin) => typeof coin.quote?.USD?.[chartMetric] === 'number').sort((left, right) => right.quote.USD[chartMetric] - left.quote.USD[chartMetric]).slice(0, 12);
+  if (!points.length) {
+    chart.innerHTML = '<text x="450" y="130" text-anchor="middle" class="chart-empty">Awaiting market data</text>';
+    return;
+  }
+  const values = points.map((coin) => coin.quote.USD[chartMetric]);
+  const minimum = Math.min(...values);
+  const maximum = Math.max(...values);
+  const spread = maximum - minimum || 1;
+  const coordinates = values.map((value, index) => ({ x: 42 + index * (816 / Math.max(points.length - 1, 1)), y: 218 - ((value - minimum) / spread) * 164 }));
+  const line = coordinates.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
+  const area = `${line} L ${coordinates.at(-1).x.toFixed(1)} 218 L ${coordinates[0].x.toFixed(1)} 218 Z`;
+  const labels = points.map((coin, index) => `<text x="${coordinates[index].x.toFixed(1)}" y="244" text-anchor="middle">${esc(coin.symbol.slice(0, 5))}</text>`).join('');
+  const dots = coordinates.map((point) => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4" />`).join('');
+  chart.innerHTML = `<line class="chart-gridline" x1="42" y1="54" x2="858" y2="54" /><line class="chart-gridline" x1="42" y1="136" x2="858" y2="136" /><line class="chart-gridline" x1="42" y1="218" x2="858" y2="218" /><path class="chart-area" d="${area}" /><path class="chart-line" d="${line}" />${dots}<g class="chart-labels">${labels}</g>`;
+  chart.setAttribute('aria-label', `Live ${chartMetric.replaceAll('_', ' ')} profile for the top ${points.length} assets`);
 }
 
 function renderMarkets() {
@@ -139,6 +160,7 @@ async function loadMarkets(category = marketState.category) {
   document.querySelector('#pulse').textContent = weightedChange >= 0 ? 'Risk on' : 'Risk off';
   marketState.all = markets;
   renderTrendingCoin(markets);
+  renderMarketChart(markets);
   filterMarkets();
   document.querySelector('#updated').textContent = `updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
@@ -190,6 +212,11 @@ document.querySelector('#refresh').addEventListener('click', refresh);
 document.querySelector('#market-search').addEventListener('input', filterMarkets);
 document.querySelector('#previous-page').addEventListener('click', () => { if (marketState.page > 1) { marketState.page -= 1; renderMarkets(); } });
 document.querySelector('#next-page').addEventListener('click', () => { if (marketState.page < Math.ceil(marketState.filtered.length / marketPageSize)) { marketState.page += 1; renderMarkets(); } });
+document.querySelectorAll('[data-chart-metric]').forEach((button) => button.addEventListener('click', () => {
+  chartMetric = button.dataset.chartMetric;
+  document.querySelectorAll('[data-chart-metric]').forEach((item) => item.classList.toggle('active', item === button));
+  renderMarketChart(marketState.all);
+}));
 document.querySelector('#watchlist-link').addEventListener('click', (event) => {
   event.preventDefault();
   marketState.watchlistOnly = true;
