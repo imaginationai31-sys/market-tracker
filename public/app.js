@@ -43,7 +43,8 @@ function renderTrendingCoin(markets) {
     return;
   }
   const percent = trending.quote.USD.percent_change_24h;
-  name.textContent = `${trending.name} (${trending.symbol})`;
+  name.textContent = trending.name;
+  name.title = trending.name;
   change.textContent = `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%`;
   change.className = `globe-change ${percent >= 0 ? 'positive' : 'negative'}`;
 }
