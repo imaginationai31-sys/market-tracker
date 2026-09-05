@@ -66,6 +66,8 @@ function bindWatchlistButtons() {
 function selectCategory(category) {
   marketState.category = category;
   marketState.watchlistOnly = false;
+  document.querySelector('#market-search').value = '';
+  marketState.page = 1;
   document.querySelector('#market-heading').textContent = marketState.categoryName;
   loadMarkets(category);
 }
@@ -78,7 +80,7 @@ async function loadMarkets(category = marketState.category) {
   if (!response.ok) throw new Error('Market data unavailable');
   const payload = await response.json();
   if (requestId !== marketState.requestId) return;
-  const markets = payload.data || [];
+  const markets = (payload.data || []).sort((left, right) => (left.cmc_rank || Number.MAX_SAFE_INTEGER) - (right.cmc_rank || Number.MAX_SAFE_INTEGER));
   const quotes = markets.map((coin) => coin.quote.USD);
   const cap = quotes.reduce((sum, quote) => sum + quote.market_cap, 0);
   const volume = quotes.reduce((sum, quote) => sum + quote.volume_24h, 0);
