@@ -21,6 +21,10 @@ function coinUrl(coin) {
   return `https://coinmarketcap.com/currencies/${encodeURIComponent(coin.slug || coin.symbol.toLowerCase())}/`;
 }
 
+function coinLogoUrl(coin) {
+  return coin.id ? `https://s2.coinmarketcap.com/static/img/coins/64x64/${encodeURIComponent(coin.id)}.png` : '';
+}
+
 function renderMarkets() {
   const start = (marketState.page - 1) * marketPageSize;
   const pageMarkets = marketState.filtered.slice(start, start + marketPageSize);
@@ -32,7 +36,8 @@ function renderMarkets() {
     const rank = start + index + 1;
     const key = coinKey(coin);
     const saved = watchlist.has(key);
-    return `<tr><td>${String(rank).padStart(2, '0')}</td><td><div class="coin"><span class="coin-symbol">${esc(coin.symbol.slice(0, 3))}</span><a class="coin-details" href="${esc(coinUrl(coin))}" target="_blank" rel="noreferrer">${esc(coin.name)}<small>${esc(coin.symbol)} · CoinMarketCap ↗</small></a></div></td><td>${money(quote.price)}</td><td class="${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${change.toFixed(2)}%</td><td>${money(quote.market_cap, true)}</td><td>${money(quote.volume_24h, true)}</td><td><button class="heart-button${saved ? ' saved' : ''}" type="button" data-watchlist="${esc(key)}" aria-label="${saved ? 'Remove' : 'Add'} ${esc(coin.name)} ${saved ? 'from' : 'to'} watchlist" aria-pressed="${saved}">♥</button></td></tr>`;
+    const logo = coinLogoUrl(coin);
+    return `<tr><td>${String(rank).padStart(2, '0')}</td><td><div class="coin"><span class="coin-symbol"><img src="${esc(logo)}" alt="" loading="lazy" onerror="this.hidden=true" />${esc(coin.symbol.slice(0, 3))}</span><a class="coin-details" href="${esc(coinUrl(coin))}" target="_blank" rel="noreferrer">${esc(coin.name)}<small>${esc(coin.symbol)} · CoinMarketCap ↗</small></a></div></td><td>${money(quote.price)}</td><td class="${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${change.toFixed(2)}%</td><td>${money(quote.market_cap, true)}</td><td>${money(quote.volume_24h, true)}</td><td><button class="heart-button${saved ? ' saved' : ''}" type="button" data-watchlist="${esc(key)}" aria-label="${saved ? 'Remove' : 'Add'} ${esc(coin.name)} ${saved ? 'from' : 'to'} watchlist" aria-pressed="${saved}">♥</button></td></tr>`;
   }).join('') : '<tr><td colspan="7" class="empty-state">No markets match your search.</td></tr>';
   document.querySelector('#market-count').textContent = `${marketState.filtered.length.toLocaleString()} markets`;
   document.querySelector('#page-indicator').textContent = `${marketState.page} / ${totalPages}`;
