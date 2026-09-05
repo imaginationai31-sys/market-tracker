@@ -8,6 +8,9 @@ const marketPageSize = 25;
 const watchlistStorageKey = 'pulseboard-watchlist';
 const watchlist = new Set(JSON.parse(localStorage.getItem(watchlistStorageKey) || '[]'));
 const marketState = { all: [], filtered: [], page: 1, category: '', categoryName: 'All markets', watchlistOnly: false, requestId: 0 };
+let moverSlides = [];
+let moverSlideIndex = 0;
+let moverSlideTimer;
 const themeToggle = document.querySelector('#theme-toggle');
 
 function applyTheme(theme) {
@@ -34,19 +37,39 @@ function coinLogoUrl(coin) {
 }
 
 function renderTrendingCoin(markets) {
-  const trending = markets.filter((coin) => typeof coin.quote?.USD?.percent_change_24h === 'number').sort((left, right) => Math.abs(right.quote.USD.percent_change_24h) - Math.abs(left.quote.USD.percent_change_24h))[0];
+  moverSlides = markets.filter((coin) => typeof coin.quote?.USD?.percent_change_24h === 'number').sort((left, right) => Math.abs(right.quote.USD.percent_change_24h) - Math.abs(left.quote.USD.percent_change_24h)).slice(0, 5);
+  moverSlideIndex = 0;
+  clearInterval(moverSlideTimer);
   const name = document.querySelector('#trending-coin');
   const change = document.querySelector('#trending-change');
-  if (!trending) {
-    name.textContent = 'Awaiting data';
+  if (!moverSlides.length) {
+    name.innerHTML = '<span class="mover-name">Awaiting market data</span>';
     change.textContent = '—';
     return;
   }
+  const dots = document.querySelector('#movers-dots');
+  dots.innerHTML = moverSlides.map((_coin, index) => `<span class="mover-dot${index === 0 ? ' active' : ''}"></span>`).join('');
+  showMoverSlide();
+  moverSlideTimer = setInterval(() => {
+    moverSlideIndex = (moverSlideIndex + 1) % moverSlides.length;
+    showMoverSlide();
+  }, 3500);
+}
+
+function showMoverSlide() {
+  const trending = moverSlides[moverSlideIndex];
+  const name = document.querySelector('#trending-coin');
+  const change = document.querySelector('#trending-change');
   const percent = trending.quote.USD.percent_change_24h;
-  name.textContent = trending.name;
-  name.title = trending.name;
+  name.querySelector('.mover-name')?.remove();
+  const nameLabel = document.createElement('span');
+  nameLabel.className = 'mover-name';
+  nameLabel.textContent = trending.name;
+  nameLabel.title = trending.name;
+  name.prepend(nameLabel);
   change.textContent = `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%`;
   change.className = `globe-change ${percent >= 0 ? 'positive' : 'negative'}`;
+  document.querySelectorAll('.mover-dot').forEach((dot, index) => dot.classList.toggle('active', index === moverSlideIndex));
 }
 
 function renderMarkets() {
