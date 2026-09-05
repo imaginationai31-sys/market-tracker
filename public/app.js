@@ -114,6 +114,14 @@ function renderMarkets() {
   bindWatchlistButtons();
 }
 
+function showMarketLoading(label = 'Loading category markets') {
+  document.querySelector('#market-table').innerHTML = `<tr><td colspan="6" class="loading">${esc(label)}<span class="loading-bar"></span></td></tr>`;
+  document.querySelector('#market-count').textContent = 'Loading markets';
+  document.querySelector('#page-indicator').textContent = '1 / 1';
+  document.querySelector('#previous-page').disabled = true;
+  document.querySelector('#next-page').disabled = true;
+}
+
 function filterMarkets() {
   const query = document.querySelector('#market-search').value.trim().toLowerCase();
   marketState.filtered = marketState.all.filter((coin) => (!marketState.watchlistOnly || watchlist.has(coinKey(coin))) && `${coin.name} ${coin.symbol}`.toLowerCase().includes(query));
@@ -137,7 +145,14 @@ function selectCategory(category) {
   document.querySelector('#market-search').value = '';
   marketState.page = 1;
   document.querySelector('#market-heading').textContent = marketState.categoryName;
-  loadMarkets(category);
+  marketState.all = [];
+  marketState.filtered = [];
+  showMarketLoading(`Loading ${marketState.categoryName.toLowerCase()}`);
+  loadMarkets(category).catch((error) => {
+    console.error(error);
+    document.querySelector('#market-table').innerHTML = '<tr><td colspan="6" class="empty-state">Category markets are temporarily unavailable.</td></tr>';
+    document.querySelector('#market-count').textContent = 'No markets loaded';
+  });
 }
 
 async function loadMarkets(category = marketState.category) {
