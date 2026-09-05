@@ -163,7 +163,10 @@ async function loadMarkets(category = marketState.category) {
   if (!response.ok) throw new Error('Market data unavailable');
   const payload = await response.json();
   if (requestId !== marketState.requestId) return;
-  const markets = (payload.data || []).sort((left, right) => (left.cmc_rank || Number.MAX_SAFE_INTEGER) - (right.cmc_rank || Number.MAX_SAFE_INTEGER));
+  const markets = (payload.data || []).sort((left, right) => {
+    if (category) return (right.quote?.USD?.market_cap || 0) - (left.quote?.USD?.market_cap || 0);
+    return (left.cmc_rank || Number.MAX_SAFE_INTEGER) - (right.cmc_rank || Number.MAX_SAFE_INTEGER);
+  });
   const quotes = markets.map((coin) => coin.quote.USD);
   const cap = quotes.reduce((sum, quote) => sum + quote.market_cap, 0);
   const volume = quotes.reduce((sum, quote) => sum + quote.volume_24h, 0);
