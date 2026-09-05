@@ -37,7 +37,7 @@ function selectCategory(category) {
 }
 
 async function loadMarkets(category = marketState.category) {
-  const query = new URLSearchParams({ limit: '1000' });
+  const query = new URLSearchParams({ limit: '100000' });
   if (category) query.set('category', category);
   const response = await fetch(`/api/markets?${query}`);
   if (!response.ok) throw new Error('Market data unavailable');
