@@ -5,7 +5,21 @@ const money = (value, compact = false) => {
 const ago = (date) => { const minutes = Math.max(1, Math.round((Date.now() - new Date(date)) / 60000)); return minutes < 60 ? `${minutes}m ago` : `${Math.round(minutes / 60)}h ago`; };
 const esc = (value) => String(value || '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const marketPageSize = 25;
-const marketState = { all: [], filtered: [], page: 1, category: '', categoryName: 'All markets' };
+const watchlistStorageKey = 'pulseboard-watchlist';
+const watchlist = new Set(JSON.parse(localStorage.getItem(watchlistStorageKey) || '[]'));
+const marketState = { all: [], filtered: [], page: 1, category: '', categoryName: 'All markets', watchlistOnly: false };
+
+function saveWatchlist() {
+  localStorage.setItem(watchlistStorageKey, JSON.stringify([...watchlist]));
+}
+
+function coinKey(coin) {
+  return String(coin.id || coin.slug || coin.symbol);
+}
+
+function coinUrl(coin) {
+  return `https://coinmarketcap.com/currencies/${encodeURIComponent(coin.slug || coin.symbol.toLowerCase())}/`;
+}
 
 function renderMarkets() {
   const start = (marketState.page - 1) * marketPageSize;
@@ -16,19 +30,32 @@ function renderMarkets() {
     const quote = coin.quote.USD;
     const change = quote.percent_change_24h;
     const rank = start + index + 1;
-    return `<tr><td>${String(rank).padStart(2, '0')}</td><td><div class="coin"><span class="coin-symbol">${esc(coin.symbol.slice(0, 3))}</span><span>${esc(coin.name)}<small>${esc(coin.symbol)}</small></span></div></td><td>${money(quote.price)}</td><td class="${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${change.toFixed(2)}%</td><td>${money(quote.market_cap, true)}</td><td>${money(quote.volume_24h, true)}</td><td><div class="mini-chart" aria-hidden="true"></div></td></tr>`;
+    const key = coinKey(coin);
+    const saved = watchlist.has(key);
+    return `<tr><td>${String(rank).padStart(2, '0')}</td><td><div class="coin"><span class="coin-symbol">${esc(coin.symbol.slice(0, 3))}</span><a class="coin-details" href="${esc(coinUrl(coin))}" target="_blank" rel="noreferrer">${esc(coin.name)}<small>${esc(coin.symbol)} · CoinMarketCap ↗</small></a></div></td><td>${money(quote.price)}</td><td class="${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${change.toFixed(2)}%</td><td>${money(quote.market_cap, true)}</td><td>${money(quote.volume_24h, true)}</td><td><button class="heart-button${saved ? ' saved' : ''}" type="button" data-watchlist="${esc(key)}" aria-label="${saved ? 'Remove' : 'Add'} ${esc(coin.name)} ${saved ? 'from' : 'to'} watchlist" aria-pressed="${saved}">♥</button></td></tr>`;
   }).join('') : '<tr><td colspan="7" class="empty-state">No markets match your search.</td></tr>';
   document.querySelector('#market-count').textContent = `${marketState.filtered.length.toLocaleString()} markets`;
   document.querySelector('#page-indicator').textContent = `${marketState.page} / ${totalPages}`;
   document.querySelector('#previous-page').disabled = marketState.page === 1;
   document.querySelector('#next-page').disabled = marketState.page >= totalPages;
+  bindWatchlistButtons();
 }
 
 function filterMarkets() {
   const query = document.querySelector('#market-search').value.trim().toLowerCase();
-  marketState.filtered = marketState.all.filter((coin) => `${coin.name} ${coin.symbol}`.toLowerCase().includes(query));
+  marketState.filtered = marketState.all.filter((coin) => (!marketState.watchlistOnly || watchlist.has(coinKey(coin))) && `${coin.name} ${coin.symbol}`.toLowerCase().includes(query));
   marketState.page = 1;
   renderMarkets();
+}
+
+function bindWatchlistButtons() {
+  document.querySelectorAll('[data-watchlist]').forEach((button) => button.addEventListener('click', () => {
+    const key = button.dataset.watchlist;
+    if (watchlist.has(key)) watchlist.delete(key);
+    else watchlist.add(key);
+    saveWatchlist();
+    filterMarkets();
+  }));
 }
 
 function selectCategory(category) {
@@ -60,6 +87,7 @@ async function loadMarkets(category = marketState.category) {
 function bindCategoryLinks() {
   document.querySelectorAll('[data-category]').forEach((link) => link.addEventListener('click', (event) => {
     event.preventDefault();
+    marketState.watchlistOnly = false;
     marketState.categoryName = link.querySelector('strong').textContent;
     document.querySelectorAll('[data-category]').forEach((item) => item.classList.toggle('selected', item === link));
     selectCategory(link.dataset.category);
@@ -97,6 +125,14 @@ document.querySelector('#refresh').addEventListener('click', refresh);
 document.querySelector('#market-search').addEventListener('input', filterMarkets);
 document.querySelector('#previous-page').addEventListener('click', () => { if (marketState.page > 1) { marketState.page -= 1; renderMarkets(); } });
 document.querySelector('#next-page').addEventListener('click', () => { if (marketState.page < Math.ceil(marketState.filtered.length / marketPageSize)) { marketState.page += 1; renderMarkets(); } });
+document.querySelector('#watchlist-link').addEventListener('click', (event) => {
+  event.preventDefault();
+  marketState.watchlistOnly = true;
+  marketState.category = '';
+  document.querySelector('#market-heading').textContent = 'Watchlist';
+  filterMarkets();
+  document.querySelector('#markets').scrollIntoView({ behavior: 'smooth' });
+});
 const menuToggle = document.querySelector('#menu-toggle');
 const siteMenu = document.querySelector('#site-menu');
 menuToggle.addEventListener('click', () => {
