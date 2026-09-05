@@ -43,8 +43,9 @@ app.get('/api/markets', async (req, res) => {
       const coins = [];
       for (let start = 1; start <= limit; start += pageSize) {
         const params = new URLSearchParams({ start: String(start), limit: String(Math.min(pageSize, limit - start + 1)), convert: 'USD' });
-        if (category) params.set('category', category);
-        const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?${params}`, { headers: coinMarketCapHeaders() });
+        const endpoint = category ? 'category' : 'listings/latest';
+        if (category) params.set('slug', category);
+        const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/${endpoint}?${params}`, { headers: coinMarketCapHeaders() });
         if (!response.ok) throw new Error(`CoinMarketCap returned ${response.status}`);
         const page = await response.json();
         coins.push(...(page.data || []));
